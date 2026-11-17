@@ -1,0 +1,146 @@
+/* ==========================================================================
+   iWriter Design System — Design Tokens
+   Claymorphism-inspired, minimalist SaaS interface.
+   ========================================================================== */
+
+:root {
+  /* ---- Brand / Accent ---- */
+  --color-accent: #635bdb;
+  --color-accent-hover: #554dc9;
+  --color-accent-active: #4a42b5;
+  --color-accent-2: #8b83f6;
+  --color-accent-soft: #eeedfb;
+  --color-accent-soft-2: #f4f3fe;
+  --color-accent-contrast: #ffffff;
+
+  /* ---- Surfaces ---- */
+  --color-bg: #f8f9fc;
+  --color-bg-subtle: #f2f4f9;
+  --color-card: #ffffff;
+  --color-card-hover: #fcfcff;
+  --color-overlay: rgba(23, 32, 51, 0.44);
+
+  /* ---- Text ---- */
+  --color-text: #172033;
+  --color-text-secondary: #748094;
+  --color-text-muted: #98a2b3;
+  --color-text-inverse: #ffffff;
+
+  /* ---- Borders ---- */
+  --color-border: #e9ecf2;
+  --color-border-strong: #dde2ec;
+
+  /* ---- Semantic ---- */
+  --color-success: #16a36a;
+  --color-success-soft: #e6f6ef;
+  --color-warning: #e8a23a;
+  --color-warning-soft: #fdf3e4;
+  --color-danger: #e05252;
+  --color-danger-soft: #fdecec;
+  --color-info: #3b82f6;
+  --color-info-soft: #eaf2fe;
+  --color-neutral-soft: #f1f3f7;
+
+  /* ---- Radius ---- */
+  --radius-xs: 6px;
+  --radius-sm: 9px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+
+  /* ---- Shadows (soft clay elevation) ---- */
+  --shadow-xs: 0 1px 2px rgba(23, 32, 51, 0.05);
+  --shadow-sm: 0 1px 2px rgba(23, 32, 51, 0.04), 0 2px 6px rgba(23, 32, 51, 0.04);
+  --shadow-md: 0 2px 6px rgba(23, 32, 51, 0.04), 0 8px 20px rgba(23, 32, 51, 0.06);
+  --shadow-lg: 0 4px 12px rgba(23, 32, 51, 0.06), 0 16px 40px rgba(23, 32, 51, 0.08);
+  --shadow-xl: 0 8px 24px rgba(23, 32, 51, 0.08), 0 28px 64px rgba(23, 32, 51, 0.12);
+  --shadow-accent: 0 6px 18px rgba(99, 91, 219, 0.28);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+
+  /* ---- Spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+  --space-10: 72px;
+
+  /* ---- Typography ---- */
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  --text-xs: 11.5px;
+  --text-sm: 12.5px;
+  --text-base: 13.5px;
+  --text-md: 14.5px;
+  --text-lg: 16px;
+  --text-xl: 19px;
+  --text-2xl: 23px;
+  --text-3xl: 28px;
+  --text-4xl: 34px;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---- Layout ---- */
+  --sidebar-width: 264px;
+  --sidebar-width-collapsed: 76px;
+  --topbar-height: 64px;
+  --content-max: 1440px;
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 130ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  --z-dropdown: 60;
+  --z-sticky: 40;
+  --z-modal: 100;
+  --z-toast: 200;
+}
+
+/* Dark theme (opt-in via [data-theme="dark"]) */
+[data-theme="dark"] {
+  --color-bg: #0e1220;
+  --color-bg-subtle: #131829;
+  --color-card: #161b2c;
+  --color-card-hover: #1b2136;
+  --color-overlay: rgba(6, 9, 17, 0.66);
+
+  --color-text: #eef1f8;
+  --color-text-secondary: #9aa4b8;
+  --color-text-muted: #6d778c;
+
+  --color-border: #242c42;
+  --color-border-strong: #2e374f;
+
+  --color-accent-soft: #221f47;
+  --color-accent-soft-2: #1c1a3a;
+  --color-neutral-soft: #1d2334;
+  --color-success-soft: #12281f;
+  --color-warning-soft: #2c2213;
+  --color-danger-soft: #2c1717;
+  --color-info-soft: #16243c;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35), 0 8px 20px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.45), 0 28px 64px rgba(0, 0, 0, 0.5);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
