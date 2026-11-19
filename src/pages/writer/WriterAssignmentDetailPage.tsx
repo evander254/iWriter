@@ -231,7 +231,11 @@ export function WriterAssignmentDetailPage() {
                     <Alert tone="danger" title="Deadline passed">
                       This assignment is no longer accepting claims.
                     </Alert>
-                  ) : assignment.status !== "available" && assignment.status !== "claimed" ? (
+                  ) : assignment.status === "claimed" ? (
+                    <Alert tone="warning" title="Assignment not available">
+                      Sorry, this assignment has already been claimed by another writer.
+                    </Alert>
+                  ) : assignment.status !== "available" ? (
                     <Alert tone="neutral" title="Not open for claims">
                       This assignment is currently {assignment.status}.
                     </Alert>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Bell,
   BellRing,
@@ -36,6 +37,7 @@ const TYPE_ICON: Record<string, LucideIcon> = {
   wallet: CreditCard,
   account: UserCog,
   info: Info,
+  assignment: FileCheck2,
 };
 
 export function NotificationCenter({ userId, title, description }: { userId: string; title: string; description: string }) {
@@ -156,11 +158,24 @@ export function NotificationCenter({ userId, title, description }: { userId: str
                     <span className="iw-notif__icon">
                       <Icon size={16} strokeWidth={2.1} />
                     </span>
-                    <div className="iw-notif__body">
-                      <div className="iw-notif__title">{notification.title ?? "Notification"}</div>
-                      <div className="iw-notif__text">{notification.message ?? ""}</div>
-                      <div className="iw-notif__time">{formatRelative(notification.created_at)}</div>
-                    </div>
+                    {notification.type === "assignment" && notification.assignment_id ? (
+                      <Link
+                        to={`/writer/assignments/${notification.assignment_id}`}
+                        className="iw-notif__body"
+                        onClick={() => void markOne(notification)}
+                        style={{ color: "inherit", textDecoration: "none" }}
+                      >
+                        <div className="iw-notif__title">{notification.title ?? "New assignment"}</div>
+                        <div className="iw-notif__text">{notification.message ?? ""}</div>
+                        <div className="iw-notif__time">{formatRelative(notification.created_at)} · View assignment</div>
+                      </Link>
+                    ) : (
+                      <div className="iw-notif__body">
+                        <div className="iw-notif__title">{notification.title ?? "Notification"}</div>
+                        <div className="iw-notif__text">{notification.message ?? ""}</div>
+                        <div className="iw-notif__time">{formatRelative(notification.created_at)}</div>
+                      </div>
+                    )}
                     {!notification.is_read && <span className="iw-notif__dot" aria-label="Unread" />}
                     <IconButton
                       icon={Trash2}

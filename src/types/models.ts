@@ -171,6 +171,7 @@ export interface AppNotification {
   title: string | null;
   message: string | null;
   type: string | null;
+  assignment_id?: string | null;
   is_read: boolean;
   created_at: string;
 }
