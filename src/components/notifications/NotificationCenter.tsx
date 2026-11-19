@@ -6,6 +6,7 @@ import {
   CheckCheck,
   CheckCircle2,
   CreditCard,
+  Clock3,
   FileCheck2,
   Info,
   RefreshCcw,
@@ -38,6 +39,7 @@ const TYPE_ICON: Record<string, LucideIcon> = {
   account: UserCog,
   info: Info,
   assignment: FileCheck2,
+  assignment_deadline_30: Clock3,
 };
 
 export function NotificationCenter({ userId, title, description }: { userId: string; title: string; description: string }) {
@@ -158,7 +160,7 @@ export function NotificationCenter({ userId, title, description }: { userId: str
                     <span className="iw-notif__icon">
                       <Icon size={16} strokeWidth={2.1} />
                     </span>
-                    {notification.type === "assignment" && notification.assignment_id ? (
+                    {notification.assignment_id ? (
                       <Link
                         to={`/writer/assignments/${notification.assignment_id}`}
                         className="iw-notif__body"
