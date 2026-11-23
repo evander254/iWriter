@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   Bell,
   BellRing,
@@ -21,12 +21,14 @@ import { useToast } from "../../contexts/ToastContext";
 import {
   countUnreadNotifications,
   deleteNotification,
+  getNotification,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
 } from "../../services";
 import type { AppNotification } from "../../types/models";
 import { formatRelative } from "../../utils/date";
+import { PushNotificationControl } from "./PushNotificationControl";
 
 const TYPE_ICON: Record<string, LucideIcon> = {
   claim: FileCheck2,
@@ -44,6 +46,7 @@ const TYPE_ICON: Record<string, LucideIcon> = {
 
 export function NotificationCenter({ userId, title, description }: { userId: string; title: string; description: string }) {
   const toast = useToast();
+  const location = useLocation();
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [busy, setBusy] = useState(false);
@@ -58,6 +61,21 @@ export function NotificationCenter({ userId, title, description }: { userId: str
     },
     [userId, page, filter],
   );
+
+  useEffect(() => {
+    if (!data || !location.hash) return;
+    const targetId = decodeURIComponent(location.hash.slice(1));
+    const notificationId = targetId.startsWith("notification-") ? targetId.slice("notification-".length) : "";
+    if (notificationId && !data.result.rows.some((item) => item.id === notificationId)) {
+      let cancelled = false;
+      void getNotification(userId, notificationId).then((notification) => {
+        if (cancelled || !notification) return;
+        if (data) setData({ ...data, result: { ...data.result, rows: [notification, ...data.result.rows] } });
+      }).catch(() => undefined);
+      return () => { cancelled = true; };
+    }
+    document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [data, location.hash, setData, userId]);
 
   const markOne = async (notification: AppNotification) => {
     if (notification.is_read) return;
@@ -104,8 +122,9 @@ export function NotificationCenter({ userId, title, description }: { userId: str
       <PageHeader
         title={title}
         description={description}
-        actions={
+          actions={
           <>
+            <PushNotificationControl userId={userId} />
             <Badge tone={data?.unread ? "accent" : "neutral"} dot={Boolean(data?.unread)}>
               {data?.unread ?? 0} unread
             </Badge>
@@ -154,6 +173,7 @@ export function NotificationCenter({ userId, title, description }: { userId: str
                 return (
                   <li
                     key={notification.id}
+                    id={`notification-${notification.id}`}
                     className={`iw-notif${notification.is_read ? "" : " iw-notif--unread"}`}
                     onClick={() => void markOne(notification)}
                   >

@@ -13,7 +13,6 @@ import {
   Paperclip,
   Quote,
   Send,
-  Timer,
   Upload,
   Users,
 } from "lucide-react";
@@ -34,6 +33,7 @@ import {
 } from "../../components/common";
 import { StatusBadge } from "../../components/common/StatusBadge";
 import { StoredFileList, type StoredFile } from "../../components/forms/FileUpload";
+import { InstructionContent } from "../../components/assignments/InstructionContent";
 import { useAsync } from "../../hooks/useAsync";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
@@ -129,9 +129,7 @@ export function WriterAssignmentDetailPage() {
               {assignment.instructions ? (
                 <div>
                   <div className="iw-field__label iw-mb-4">Instructions</div>
-                  <p className="text-sm" style={{ whiteSpace: "pre-wrap" }}>
-                    {assignment.instructions}
-                  </p>
+                  <InstructionContent text={assignment.instructions} />
                 </div>
               ) : (
                 <p className="text-sm text-muted">No detailed instructions were provided.</p>
@@ -147,7 +145,6 @@ export function WriterAssignmentDetailPage() {
                 <Meta icon={Layers} label="Pages" value={assignment.pages ?? "—"} />
                 <Meta icon={BookOpen} label="Sources" value={assignment.sources_required ?? "—"} />
                 <Meta icon={Quote} label="Citation" value={assignment.citation_style ?? "—"} />
-                <Meta icon={Timer} label="Duration" value={assignment.estimated_duration ?? "—"} />
                 <Meta icon={Users} label="Max claims" value={assignment.max_claims ?? 1} />
               </div>
             </div>

@@ -45,7 +45,6 @@ import {
 import {
   ACADEMIC_LEVELS,
   CITATION_STYLES,
-  DURATION_OPTIONS,
   FILE_FORMATS,
   PRIORITY_OPTIONS,
   SPACING_OPTIONS,
@@ -66,11 +65,10 @@ const schema = z.object({
   priority: z.enum(["low", "normal", "high", "urgent"]),
   visibility: z.enum(["public", "private"]),
   words: z.coerce.number().int().min(0).max(100000).optional(),
-  pages: z.coerce.number().int().min(0).max(500).optional(),
+  pages: z.coerce.number().min(0).max(500).optional(),
   sources_required: z.coerce.number().int().min(0).max(500).optional(),
   spacing: z.string().optional(),
   file_format: z.string().optional(),
-  estimated_duration: z.string().optional(),
   max_claims: z.coerce.number().int().min(1, "At least one claim").max(100),
   reward: z.coerce.number().min(0, "Reward cannot be negative").max(1000000),
   deadline: z.string().min(1, "Set a deadline"),
@@ -89,14 +87,13 @@ const DEFAULTS: FormValues = {
   citation_style: "",
   priority: "normal",
   visibility: "public",
-  words: 1000,
-  pages: 4,
+  words: 300,
+  pages: 1,
   sources_required: 0,
   spacing: "Double",
   file_format: "DOCX",
-  estimated_duration: "2 days",
   max_claims: 1,
-  reward: 50,
+  reward: 1.5,
   deadline: "",
 };
 
@@ -126,6 +123,7 @@ export function AdminAssignmentFormPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({ resolver: zodResolver(schema), defaultValues: DEFAULTS });
 
@@ -147,7 +145,6 @@ export function AdminAssignmentFormPage() {
       sources_required: assignment.sources_required ?? 0,
       spacing: assignment.spacing ?? "Double",
       file_format: assignment.file_format ?? "DOCX",
-      estimated_duration: assignment.estimated_duration ?? "2 days",
       max_claims: assignment.max_claims ?? 1,
       reward: assignment.reward ?? 0,
       deadline: toDateTimeInputValue(assignment.deadline),
@@ -166,6 +163,7 @@ export function AdminAssignmentFormPage() {
         description: values.description || null,
         instructions: values.instructions || null,
         deadline: values.deadline ? new Date(values.deadline).toISOString() : null,
+        estimated_duration: null,
         status,
         visibility: values.visibility,
         priority: values.priority as AssignmentPriority,
@@ -268,8 +266,8 @@ export function AdminAssignmentFormPage() {
                 <Textarea id="description" rows={3} placeholder="Summarise the assignment for writers…" {...register("description")} />
               </Field>
 
-              <Field label="Detailed instructions" htmlFor="instructions" error={errors.instructions?.message}>
-                <Textarea id="instructions" rows={5} placeholder="Structure, marking criteria, must-include points…" {...register("instructions")} />
+              <Field label="Detailed instructions" htmlFor="instructions" hint="Paste full URLs (https://…) or use [link text](https://example.com) to add a named link." error={errors.instructions?.message}>
+                <Textarea id="instructions" rows={5} placeholder="Structure, marking criteria, must-include points, useful links…" {...register("instructions")} />
               </Field>
             </div>
           </Card>
@@ -366,10 +364,21 @@ export function AdminAssignmentFormPage() {
 
               <FieldRow>
                 <Field label="Word count" htmlFor="words" error={errors.words?.message}>
-                  <Input id="words" type="number" min={0} {...register("words")} />
+                  <Input
+                    id="words"
+                    type="number"
+                    min={0}
+                    {...register("words", {
+                      onChange: (event) => {
+                        const words = Math.max(0, Number(event.target.value) || 0);
+                        setValue("pages", Math.round((words / 300) * 100) / 100, { shouldDirty: true, shouldValidate: true });
+                        setValue("reward", Math.round((words * 1.5 / 300) * 100) / 100, { shouldDirty: true, shouldValidate: true });
+                      },
+                    })}
+                  />
                 </Field>
-                <Field label="Pages" htmlFor="pages" error={errors.pages?.message}>
-                  <Input id="pages" type="number" min={0} {...register("pages")} />
+                <Field label="Pages" htmlFor="pages" hint="Calculated at 300 words per page" error={errors.pages?.message}>
+                  <Input id="pages" type="number" min={0} step="0.01" readOnly {...register("pages")} />
                 </Field>
                 <Field label="Sources required" htmlFor="sources_required" error={errors.sources_required?.message}>
                   <Input id="sources_required" type="number" min={0} {...register("sources_required")} />
@@ -395,15 +404,6 @@ export function AdminAssignmentFormPage() {
                     ))}
                   </Select>
                 </Field>
-                <Field label="Estimated duration" htmlFor="estimated_duration">
-                  <Select id="estimated_duration" {...register("estimated_duration")}>
-                    {DURATION_OPTIONS.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
               </FieldRow>
             </div>
           </Card>
@@ -421,8 +421,8 @@ export function AdminAssignmentFormPage() {
               </div>
 
               <FieldRow>
-                <Field label="Reward (USD)" htmlFor="reward" required error={errors.reward?.message}>
-                  <Input id="reward" type="number" min={0} step="0.01" icon={Coins} {...register("reward")} />
+                <Field label="Cost price / reward (USD)" htmlFor="reward" required hint="$1.50 per 300 words" error={errors.reward?.message}>
+                  <Input id="reward" type="number" min={0} step="0.01" icon={Coins} readOnly {...register("reward")} />
                 </Field>
                 <Field label="Maximum claims" htmlFor="max_claims" required hint="How many writers may work on this" error={errors.max_claims?.message}>
                   <Input id="max_claims" type="number" min={1} {...register("max_claims")} />

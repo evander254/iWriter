@@ -282,6 +282,24 @@
   color: var(--color-text-muted);
 }
 
+.iw-instruction-content {
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.iw-instruction-content a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.iw-instruction-content a:hover {
+  color: var(--color-accent-2);
+}
+
 .iw-field__error {
   display: flex;
   align-items: center;

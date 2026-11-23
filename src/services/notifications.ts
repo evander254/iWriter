@@ -36,6 +36,17 @@ export async function listRecentNotifications(userId: string, limit = 6): Promis
   return unwrapList(data as AppNotification[] | null, error);
 }
 
+export async function getNotification(userId: string, notificationId: string): Promise<AppNotification | null> {
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", notificationId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as AppNotification | null) ?? null;
+}
+
 export async function countUnreadNotifications(userId: string): Promise<number> {
   const { count } = await supabase
     .from("notifications")

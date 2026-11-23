@@ -21,23 +21,21 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 const AVATAR_STYLES = [
-  { name: "Sage", background: "#dce9df", skin: "#b97855", hair: "#263c35", shirt: "#526f60" },
-  { name: "Studio", background: "#e8e2f2", skin: "#e0ae88", hair: "#513d4b", shirt: "#76618f" },
-  { name: "Classic", background: "#f3e5d8", skin: "#87553c", hair: "#282b31", shirt: "#b77c55" },
-  { name: "Atlas", background: "#dce9f1", skin: "#d5996c", hair: "#493829", shirt: "#4e748a" },
-  { name: "Muse", background: "#f1dfdf", skin: "#f0c6a5", hair: "#704843", shirt: "#ad7279" },
-  { name: "Noir", background: "#e1e3e8", skin: "#a96d50", hair: "#252a38", shirt: "#596273" },
-  { name: "Cedar", background: "#e9e7d5", skin: "#d7a67d", hair: "#59402f", shirt: "#7b8060" },
-  { name: "Coast", background: "#d9ece9", skin: "#754a3c", hair: "#242d32", shirt: "#43817e" },
-  { name: "Scholar", background: "#eee4d3", skin: "#e2b28e", hair: "#45352c", shirt: "#9b7953" },
-  { name: "Modern", background: "#e3e4f4", skin: "#c5815e", hair: "#332d42", shirt: "#696b9b" },
-  { name: "Terra", background: "#f1e1d4", skin: "#986344", hair: "#3a3028", shirt: "#a66b48" },
-  { name: "Juniper", background: "#dfe9e2", skin: "#edc09b", hair: "#725347", shirt: "#648473" },
-].map((style, index) => ({
-  ...style,
-  url: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="64" fill="${style.background}"/><path d="M19 128c3-27 20-42 45-42s42 15 45 42" fill="${style.shirt}"/><path d="M39 53c0-25 12-37 27-37 18 0 27 14 25 38l-4 15H42z" fill="${style.hair}"/><ellipse cx="64" cy="59" rx="23" ry="29" fill="${style.skin}"/><path d="M40 48c2-22 14-32 28-32 17 0 27 13 25 32-8-2-14-8-17-16-9 10-21 15-36 16" fill="${style.hair}"/><path d="M54 61h1m18 0h1" stroke="#392f2b" stroke-width="3" stroke-linecap="round"/><path d="M58 73c4 3 9 3 13 0" fill="none" stroke="#965f52" stroke-width="2" stroke-linecap="round"/></svg>`)}`,
-  id: `preset-${index + 1}`,
-}));
+  { id: "iron-man", name: "Iron Man", url: "/avatars/01-iron-man.svg" },
+  { id: "captain-america", name: "Captain America", url: "/avatars/02-captain-america.svg" },
+  { id: "black-widow", name: "Black Widow", url: "/avatars/03-black-widow.svg" },
+  { id: "agent-carter", name: "Agent Carter", url: "/avatars/04-agent-carter.svg" },
+  { id: "hulk", name: "Hulk", url: "/avatars/05-hulk.svg" },
+  { id: "she-hulk", name: "She-Hulk", url: "/avatars/06-she-hulk.svg" },
+  { id: "spider-man", name: "Spider-Man", url: "/avatars/07-spider-man.svg" },
+  { id: "moon-knight", name: "Moon Knight", url: "/avatars/08-moon-knight.svg" },
+  { id: "black-panther", name: "Black Panther", url: "/avatars/09-black-panther.svg" },
+  { id: "sue-storm", name: "Sue Storm", url: "/avatars/10-sue-storm.svg" },
+  { id: "deadpool", name: "Deadpool", url: "/avatars/11-deadpool.svg" },
+  { id: "spider-gwen", name: "Spider-Gwen", url: "/avatars/12-spider-gwen.svg" },
+  { id: "ant-man", name: "Ant-Man", url: "/avatars/13-ant-man.svg" },
+  { id: "wasp", name: "Wasp", url: "/avatars/14-wasp.svg" },
+];
 
 export function ProfileForm() {
   const { profile, refreshProfile } = useAuth();
@@ -70,7 +68,7 @@ export function ProfileForm() {
   useEffect(() => {
     let cancelled = false;
     if (profile?.avatar_url) {
-      if (profile.avatar_url.startsWith("data:")) {
+      if (profile.avatar_url.startsWith("data:") || profile.avatar_url.startsWith("/avatars/")) {
         setAvatarUrl(profile.avatar_url);
         return () => { cancelled = true; };
       }

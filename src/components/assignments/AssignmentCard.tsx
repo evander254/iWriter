@@ -6,7 +6,6 @@ import {
   GraduationCap,
   Layers,
   Quote,
-  Timer,
   Users,
   Wallet,
 } from "lucide-react";
@@ -79,7 +78,6 @@ export function AssignmentCard({
         <Meta icon={Layers} label="Pages" value={assignment.pages ?? "—"} />
         <Meta icon={Quote} label="Citation" value={assignment.citation_style ?? "—"} />
         <Meta icon={BookOpen} label="Sources" value={assignment.sources_required ?? "—"} />
-        <Meta icon={Timer} label="Duration" value={assignment.estimated_duration ?? "—"} />
         <Meta icon={Users} label="Claims" value={`${claimedCount ?? 0}/${assignment.max_claims ?? 1}`} />
       </div>
 

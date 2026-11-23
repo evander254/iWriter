@@ -12,7 +12,6 @@ import {
   Quote,
   RefreshCcw,
   ShieldCheck,
-  Timer,
   Users,
   XCircle,
 } from "lucide-react";
@@ -34,6 +33,7 @@ import {
 } from "../../components/common";
 import { StatusBadge } from "../../components/common/StatusBadge";
 import { StoredFileList, type StoredFile } from "../../components/forms/FileUpload";
+import { InstructionContent } from "../../components/assignments/InstructionContent";
 import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../contexts/ToastContext";
 import { getSubmission, listSubmissionsForClaim, reviewSubmission, type ReviewDecision } from "../../services";
@@ -133,9 +133,7 @@ export function AdminSubmissionReviewPage() {
               {assignment?.instructions && (
                 <div>
                   <div className="iw-field__label iw-mb-4">Instructions</div>
-                  <p className="text-sm" style={{ whiteSpace: "pre-wrap" }}>
-                    {assignment.instructions}
-                  </p>
+                  <InstructionContent text={assignment.instructions} />
                 </div>
               )}
 
@@ -144,7 +142,6 @@ export function AdminSubmissionReviewPage() {
                 <Meta icon={Layers} label="Category" value={assignment?.category?.name ?? "—"} />
                 <Meta icon={FileText} label="Words" value={assignment?.words ? formatNumber(assignment.words) : "—"} />
                 <Meta icon={Quote} label="Citation" value={assignment?.citation_style ?? "—"} />
-                <Meta icon={Timer} label="Duration" value={assignment?.estimated_duration ?? "—"} />
                 <Meta icon={Users} label="Max claims" value={assignment?.max_claims ?? 1} />
               </div>
             </div>
