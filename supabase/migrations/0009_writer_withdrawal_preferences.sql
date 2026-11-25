@@ -134,4 +134,7 @@ $$;
 grant execute on function public.set_writer_withdrawal_method(text, text) to authenticated;
 grant execute on function public.request_withdrawal(numeric) to authenticated;
 
+-- Make the new table and RPC visible to Supabase's PostgREST API immediately.
+notify pgrst, 'reload schema';
+
 commit;

@@ -105,7 +105,12 @@ export async function getWriterWithdrawalMethod(writerId: string): Promise<Write
     .select("writer_id, method, account_number, last_changed_at")
     .eq("writer_id", writerId)
     .maybeSingle();
-  if (error) throw new ApiError(error.message, error);
+  if (error) {
+    if (error.code === "PGRST205" || /writer_withdrawal_methods.*schema cache|schema cache.*writer_withdrawal_methods/i.test(error.message)) {
+      throw new Error("The withdrawal database migration is missing. Run supabase/migrations/0009_writer_withdrawal_preferences.sql in the Supabase SQL editor, then reload the schema cache.");
+    }
+    throw new ApiError(error.message, error);
+  }
   return data as WriterWithdrawalMethod | null;
 }
 

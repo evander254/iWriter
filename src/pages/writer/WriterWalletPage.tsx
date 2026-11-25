@@ -84,14 +84,23 @@ export function WriterWalletPage() {
 
   const { data, loading, error, reload } = useAsync(async () => {
     if (!user) return null;
-    const [withdrawals, transactions, totals, earnings, withdrawalMethod] = await Promise.all([
+    const [withdrawals, transactions, totals, earnings, withdrawalMethodResult] = await Promise.all([
       listWithdrawals({ userId: user.id, pageSize: 8 }),
       listRecentTransactions(user.id, 6),
       sumTransactions(user.id),
       getEarningPoints(user.id),
-      getWriterWithdrawalMethod(user.id),
+      Promise.allSettled([getWriterWithdrawalMethod(user.id)]).then(([result]) => result),
     ]);
-    return { withdrawals, transactions, totals, earnings, withdrawalMethod };
+    return {
+      withdrawals,
+      transactions,
+      totals,
+      earnings,
+      withdrawalMethod: withdrawalMethodResult.status === "fulfilled" ? withdrawalMethodResult.value : null,
+      withdrawalMethodError: withdrawalMethodResult.status === "rejected"
+        ? withdrawalMethodResult.reason instanceof Error ? withdrawalMethodResult.reason.message : "Could not load payout details."
+        : null,
+    };
   }, [user?.id]);
 
   const {
@@ -201,6 +210,11 @@ export function WriterWalletPage() {
           <Card flush>
             <CardHeader icon={CalendarDays} title="Default withdrawal method" subtitle="Set your payout details before requesting a withdrawal." />
             <div className="iw-card__body stack iw-gap-4">
+              {data.withdrawalMethodError && (
+                <Alert tone="danger" title="Withdrawal setup unavailable">
+                  {data.withdrawalMethodError}
+                </Alert>
+              )}
               {data.withdrawalMethod && !canEditPayoutMethod && (
                 <Alert tone="info" title="Monthly change limit reached">
                   Your default method can be changed again next month. You can still request a payout using the saved details below.
@@ -221,7 +235,7 @@ export function WriterWalletPage() {
                   disabled={suspended || busy || !canEditPayoutMethod}
                 />
               </Field>
-              {canEditPayoutMethod && (
+              {canEditPayoutMethod && !data.withdrawalMethodError && (
                 <Button variant="outline" loading={busy} disabled={suspended} onClick={() => void onSavePayoutMethod()}>
                   {data.withdrawalMethod ? "Update default method" : "Save default method"}
                 </Button>
@@ -252,7 +266,7 @@ export function WriterWalletPage() {
                 Your next withdrawal date is {nextPayoutDate} (UTC).
               </Alert>
             )}
-            <Button type="submit" variant="primary" icon={Banknote} loading={busy} disabled={suspended || balance < MIN_WITHDRAWAL || !data.withdrawalMethod || !withdrawalDay}>
+            <Button type="submit" variant="primary" icon={Banknote} loading={busy} disabled={suspended || balance < MIN_WITHDRAWAL || !data.withdrawalMethod || Boolean(data.withdrawalMethodError) || !withdrawalDay}>
               Request withdrawal
             </Button>
             {!data.withdrawalMethod && <p className="text-xs text-muted">Save a default withdrawal method above before requesting a payout.</p>}
