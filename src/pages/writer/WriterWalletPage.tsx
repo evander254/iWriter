@@ -28,6 +28,7 @@ import {
   Select,
   StatCard,
   Table,
+  Tabs,
   Td,
   Th,
 } from "../../components/common";
@@ -57,6 +58,7 @@ const schema = z.object({
   amount: z.coerce.number().positive("Enter an amount").min(MIN_WITHDRAWAL, `Minimum is $${MIN_WITHDRAWAL}`),
 });
 type FormValues = z.infer<typeof schema>;
+type WalletTab = "earnings" | "withdraw" | "history" | "transactions";
 
 function nextWithdrawalDate(now = new Date()): Date {
   const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -78,6 +80,7 @@ export function WriterWalletPage() {
   const { user, profile, refreshProfile } = useAuth();
   const toast = useToast();
   const [range, setRange] = useState<RangePreset>("30d");
+  const [activeTab, setActiveTab] = useState<WalletTab>("earnings");
   const [busy, setBusy] = useState(false);
   const [payoutMethod, setPayoutMethod] = useState<string>(WITHDRAWAL_METHODS[0]);
   const [payoutAccount, setPayoutAccount] = useState("");
@@ -178,35 +181,96 @@ export function WriterWalletPage() {
       <PageHeader
         title="My wallet"
         description="Track your earnings and request payouts."
-        actions={
-          <Segmented
-            value={range}
-            onChange={setRange}
-            options={RANGE_OPTIONS.map((o) => ({ value: o.value, label: o.label.replace("Last ", "") }))}
-          />
-        }
       />
 
-      <div className="iw-grid iw-grid--stats">
-        <StatCard label="Available balance" value={formatCurrency(balance)} icon={WalletIcon} tone="accent" foot="ready to withdraw" />
-        <StatCard label="Lifetime earnings" value={formatCurrency(profile.total_earnings)} icon={Coins} tone="success" foot="all time" />
-        <StatCard label="Pending payouts" value={formatCurrency(pendingTotal)} icon={PiggyBank} tone="warning" foot="in review" />
-        <StatCard label="Total withdrawn" value={formatCurrency(data.totals.debits)} icon={Banknote} tone="accent" foot="paid out" />
-      </div>
+      <Tabs
+        className="iw-mt-5 iw-mb-5"
+        items={[
+          { value: "earnings", label: "Earnings" },
+          { value: "withdraw", label: "Withdraw" },
+          { value: "history", label: "Withdrawal history", count: data.withdrawals.count },
+          { value: "transactions", label: "Transactions" },
+        ]}
+        value={activeTab}
+        onChange={setActiveTab}
+      />
 
-      <div className="iw-grid iw-grid--2-1 iw-mt-5">
-        <Card flush>
-          <CardHeader title="Earnings" subtitle={`${formatCurrency(rangeTotal)} in the selected period`} />
-          <div className="iw-chart-card__body">
-            {series.every((p) => p.value === 0) ? (
-              <EmptyState icon={TrendingUp} title="No earnings in this period" description="Complete assignments to earn." compact />
-            ) : (
-              <EarningsAreaChart data={series} series={[{ key: "value", name: "Earnings", color: CHART_COLORS.success }]} />
-            )}
-          </div>
-        </Card>
-
+      {activeTab === "earnings" && (
         <div className="stack iw-gap-5">
+          <div className="iw-grid iw-grid--stats">
+            <StatCard label="Available balance" value={formatCurrency(balance)} icon={WalletIcon} tone="accent" foot="ready to withdraw" />
+            <StatCard label="Lifetime earnings" value={formatCurrency(profile.total_earnings)} icon={Coins} tone="success" foot="all time" />
+            <StatCard label="Pending payouts" value={formatCurrency(pendingTotal)} icon={PiggyBank} tone="warning" foot="in review" />
+            <StatCard label="Total withdrawn" value={formatCurrency(data.totals.debits)} icon={Banknote} tone="accent" foot="paid out" />
+          </div>
+          <Card flush>
+            <CardHeader
+              title="Earnings"
+              subtitle={`${formatCurrency(rangeTotal)} in the selected period`}
+              actions={
+                <Segmented
+                  value={range}
+                  onChange={setRange}
+                  options={RANGE_OPTIONS.map((o) => ({ value: o.value, label: o.label.replace("Last ", "") }))}
+                />
+              }
+            />
+            <div className="iw-chart-card__body">
+              {series.every((p) => p.value === 0) ? (
+                <EmptyState icon={TrendingUp} title="No earnings in this period" description="Complete assignments to earn." compact />
+              ) : (
+                <EarningsAreaChart data={series} series={[{ key: "value", name: "Earnings", color: CHART_COLORS.success }]} />
+              )}
+            </div>
+          </Card>
+
+          <Card flush>
+            <CardHeader title="Earnings vs. withdrawals" subtitle="How your lifetime earnings have moved" />
+            <div className="iw-card__body stack iw-gap-4">
+              <div>
+                <div className="iw-between iw-mb-2"><span className="text-sm text-secondary">Total credited</span><Money value={data.totals.credits} /></div>
+                <Progress value={100} tone="success" />
+              </div>
+              <div>
+                <div className="iw-between iw-mb-2"><span className="text-sm text-secondary">Currently in wallet</span><Money value={balance} /></div>
+                <Progress value={data.totals.credits ? (balance / data.totals.credits) * 100 : 0} tone="accent" />
+              </div>
+              <div>
+                <div className="iw-between iw-mb-2"><span className="text-sm text-secondary">Withdrawn</span><Money value={data.totals.debits} /></div>
+                <Progress value={data.totals.credits ? (data.totals.debits / data.totals.credits) * 100 : 0} tone="accent" />
+              </div>
+              <p className="text-xs text-muted">{formatNumber(data.totals.credits > 0 ? (data.totals.debits / data.totals.credits) * 100 : 0)}% of your earnings have been withdrawn.</p>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === "withdraw" && (
+        <div className="iw-grid iw-grid--2-1">
+          <Card flush>
+            <CardHeader title="Request a withdrawal" subtitle={`Minimum $${MIN_WITHDRAWAL} · Withdrawals on the 1st and 15th`} />
+            <form className="iw-card__body stack iw-gap-4" onSubmit={handleSubmit(onSubmit)}>
+              {suspended && <Alert tone="warning" title="Account suspended">You cannot request withdrawals while suspended.</Alert>}
+              <div className="iw-between iw-p-3" style={{ background: "var(--color-bg-subtle)", borderRadius: 12 }}>
+                <span className="text-sm text-secondary">Available</span><strong>{formatCurrency(balance)}</strong>
+              </div>
+              <Field label="Amount (USD)" htmlFor="amount" required error={errors.amount?.message}>
+                <Input id="amount" type="number" step="0.01" min={MIN_WITHDRAWAL} icon={WalletIcon} disabled={suspended} {...register("amount")} />
+              </Field>
+              {data.withdrawalMethod && <p className="text-xs text-muted">Paying to {data.withdrawalMethod.method} · {data.withdrawalMethod.account_number}</p>}
+              {!withdrawalDay && (
+                <Alert tone="info" title="Withdrawal dates are the 1st and 15th">
+                  Your next withdrawal date is {nextPayoutDate} (UTC).
+                </Alert>
+              )}
+              <Button type="submit" variant="primary" icon={Banknote} loading={busy} disabled={suspended || balance < MIN_WITHDRAWAL || !data.withdrawalMethod || Boolean(data.withdrawalMethodError) || !withdrawalDay}>
+                Request withdrawal
+              </Button>
+              {!data.withdrawalMethod && <p className="text-xs text-muted">Save a default withdrawal method before requesting a payout.</p>}
+              {balance < MIN_WITHDRAWAL && <p className="text-xs text-muted">You need at least ${MIN_WITHDRAWAL} to request a payout.</p>}
+            </form>
+          </Card>
+
           <Card flush>
             <CardHeader icon={CalendarDays} title="Default withdrawal method" subtitle="Set your payout details before requesting a withdrawal." />
             <div className="iw-card__body stack iw-gap-4">
@@ -242,43 +306,10 @@ export function WriterWalletPage() {
               )}
             </div>
           </Card>
-
-          <Card flush>
-          <CardHeader title="Request a withdrawal" subtitle={`Minimum $${MIN_WITHDRAWAL} · Withdrawals on the 1st and 15th`} />
-          <form className="iw-card__body stack iw-gap-4" onSubmit={handleSubmit(onSubmit)}>
-            {suspended && (
-              <Alert tone="warning" title="Account suspended">
-                You cannot request withdrawals while suspended.
-              </Alert>
-            )}
-            <div className="iw-between iw-p-3" style={{ background: "var(--color-bg-subtle)", borderRadius: 12 }}>
-              <span className="text-sm text-secondary">Available</span>
-              <strong>{formatCurrency(balance)}</strong>
-            </div>
-            <Field label="Amount (USD)" htmlFor="amount" required error={errors.amount?.message}>
-              <Input id="amount" type="number" step="0.01" min={MIN_WITHDRAWAL} icon={WalletIcon} disabled={suspended} {...register("amount")} />
-            </Field>
-            {data.withdrawalMethod && (
-              <p className="text-xs text-muted">Paying to {data.withdrawalMethod.method} · {data.withdrawalMethod.account_number}</p>
-            )}
-            {!withdrawalDay && (
-              <Alert tone="info" title="Withdrawal dates are the 1st and 15th">
-                Your next withdrawal date is {nextPayoutDate} (UTC).
-              </Alert>
-            )}
-            <Button type="submit" variant="primary" icon={Banknote} loading={busy} disabled={suspended || balance < MIN_WITHDRAWAL || !data.withdrawalMethod || Boolean(data.withdrawalMethodError) || !withdrawalDay}>
-              Request withdrawal
-            </Button>
-            {!data.withdrawalMethod && <p className="text-xs text-muted">Save a default withdrawal method above before requesting a payout.</p>}
-            {balance < MIN_WITHDRAWAL && (
-              <p className="text-xs text-muted">You need at least ${MIN_WITHDRAWAL} to request a payout.</p>
-            )}
-          </form>
-          </Card>
         </div>
-      </div>
+      )}
 
-      <div className="iw-grid iw-grid--2-1 iw-mt-5">
+      {activeTab === "history" && (
         <Card flush>
           <CardHeader title="Withdrawal history" subtitle={`${data.withdrawals.count} request(s)`} />
           {data.withdrawals.rows.length === 0 ? (
@@ -319,7 +350,9 @@ export function WriterWalletPage() {
             </Table>
           )}
         </Card>
+      )}
 
+      {activeTab === "transactions" && (
         <Card flush>
           <CardHeader title="Recent transactions" subtitle="Latest wallet activity" />
           {data.transactions.length === 0 ? (
@@ -343,37 +376,7 @@ export function WriterWalletPage() {
             </ul>
           )}
         </Card>
-      </div>
-
-      <Card className="iw-mt-5" flush>
-        <CardHeader title="Earnings vs. withdrawals" subtitle="How your lifetime earnings have moved" />
-        <div className="iw-card__body stack iw-gap-4">
-          <div>
-            <div className="iw-between iw-mb-2">
-              <span className="text-sm text-secondary">Total credited</span>
-              <Money value={data.totals.credits} />
-            </div>
-            <Progress value={100} tone="success" />
-          </div>
-          <div>
-            <div className="iw-between iw-mb-2">
-              <span className="text-sm text-secondary">Currently in wallet</span>
-              <Money value={balance} />
-            </div>
-            <Progress value={data.totals.credits ? (balance / data.totals.credits) * 100 : 0} tone="accent" />
-          </div>
-          <div>
-            <div className="iw-between iw-mb-2">
-              <span className="text-sm text-secondary">Withdrawn</span>
-              <Money value={data.totals.debits} />
-            </div>
-            <Progress value={data.totals.credits ? (data.totals.debits / data.totals.credits) * 100 : 0} tone="accent" />
-          </div>
-          <p className="text-xs text-muted">
-            {formatNumber(data.totals.credits > 0 ? (data.totals.debits / data.totals.credits) * 100 : 0)}% of your earnings have been withdrawn.
-          </p>
-        </div>
-      </Card>
+      )}
     </div>
   );
 }
