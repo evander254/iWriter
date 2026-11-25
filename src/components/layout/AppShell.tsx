@@ -8,6 +8,7 @@ import { Topbar } from "./Topbar";
 import { useNavBadges } from "../../hooks/useNavBadges";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { SupportChat } from "../support/SupportChat";
 
 export interface AppShellProps {
   role: AppRole;
@@ -28,7 +29,10 @@ export function AppShell({ role }: AppShellProps) {
       .channel(`live-platform-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public" }, (payload) => {
         window.dispatchEvent(new CustomEvent("iw:realtime", { detail: payload }));
-        if (payload.table === "notifications" && payload.eventType === "INSERT") {
+        const incomingSupportMessage = payload.table === "support_messages"
+          && payload.eventType === "INSERT"
+          && (payload.new as { sender_id?: string } | undefined)?.sender_id !== user.id;
+        if ((payload.table === "notifications" && payload.eventType === "INSERT") || incomingSupportMessage) {
           // A short, locally generated chime; no audio asset/network request.
           try {
             const AudioContextClass = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -110,6 +114,7 @@ export function AppShell({ role }: AppShellProps) {
           </div>
         </div>
       )}
+      {user && <SupportChat />}
     </div>
   );
 }

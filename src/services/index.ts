@@ -8,3 +8,4 @@ export * from "./finance";
 export * from "./notifications";
 export * from "./admin";
 export * from "./storage";
+export * from "./support";

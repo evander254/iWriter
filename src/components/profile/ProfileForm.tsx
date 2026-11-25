@@ -10,6 +10,7 @@ import { updateMyProfile, uploadFile, STORAGE_FOLDERS, getSignedUrl } from "../.
 import { displayName } from "../../types";
 import { ROLE_LABEL } from "../../lib/navigation";
 import { formatDate } from "../../utils/date";
+import { WriterExpertiseForm } from "./WriterExpertiseForm";
 
 const schema = z.object({
   full_name: z.string().min(2, "Enter your full name").max(120),
@@ -182,6 +183,7 @@ export function ProfileForm() {
       </Card>
 
       <div className="stack iw-gap-5">
+        {profile.role === "writer" && <WriterExpertiseForm />}
         <Card flush>
           <CardHeader title="Profile avatar" subtitle="Choose a professional style or upload your own photo." />
           <div className="iw-card__body stack iw-gap-4" style={{ alignItems: "center", textAlign: "center" }}>
@@ -199,7 +201,7 @@ export function ProfileForm() {
                   );
                 })}
               </div>
-              <p className="text-xs text-muted">12 original styles, made to look right across your writer profile.</p>
+              <p className="text-xs text-muted">14 original styles, made to look right across your writer profile.</p>
             </div>
             <input
               ref={fileRef}

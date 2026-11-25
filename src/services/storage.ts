@@ -7,6 +7,7 @@ export const STORAGE_FOLDERS = {
   submissions: "submissions",
   revisions: "revisions",
   profiles: "profiles",
+  support: "support",
 } as const;
 
 export type StorageFolder = (typeof STORAGE_FOLDERS)[keyof typeof STORAGE_FOLDERS];
@@ -47,12 +48,13 @@ export async function uploadFile(
   folder: StorageFolder,
   scopeId: string,
   file: File,
+  bucket = STORAGE_BUCKET,
 ): Promise<UploadedFile> {
   const invalid = validateFile(file);
   if (invalid) throw new ApiError(invalid);
 
   const path = buildPath(folder, scopeId, file);
-  const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(path, file, {
+  const { error } = await supabase.storage.from(bucket).upload(path, file, {
     cacheControl: "3600",
     upsert: false,
     contentType: file.type || undefined,
@@ -77,11 +79,11 @@ export async function uploadFiles(
 }
 
 /** Create a short-lived signed URL for a private file. */
-export async function getSignedUrl(path: string, expiresIn = 3600): Promise<string | null> {
+export async function getSignedUrl(path: string, expiresIn = 3600, bucket = STORAGE_BUCKET): Promise<string | null> {
   if (!path) return null;
   // Support legacy absolute URLs stored in file_url.
   if (/^https?:\/\//i.test(path)) return path;
-  const { data, error } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, expiresIn);
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
   if (error) return null;
   return data?.signedUrl ?? null;
 }

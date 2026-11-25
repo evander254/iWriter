@@ -19,6 +19,7 @@ const ASSIGNMENT_SELECT = `
 export interface AssignmentFilters extends ListParams {
   status?: AssignmentStatus | AssignmentStatus[];
   subjectId?: string;
+  subjectIds?: string[];
   categoryId?: string;
   priority?: AssignmentPriority;
   academicLevel?: string;
@@ -84,6 +85,9 @@ export async function listMarketplaceAssignments(filters: AssignmentFilters = {}
     sortBy = "created_at",
     sortDir = "desc",
   } = filters;
+  if (filters.subjectIds && filters.subjectIds.length === 0) {
+    return { rows: [], count: 0, page, pageSize };
+  }
   const [from, to] = pageRange(page, pageSize);
 
   let query = supabase
@@ -94,6 +98,7 @@ export async function listMarketplaceAssignments(filters: AssignmentFilters = {}
     .gte("deadline", new Date().toISOString());
 
   if (filters.subjectId) query = query.eq("subject_id", filters.subjectId);
+  if (filters.subjectIds) query = query.in("subject_id", filters.subjectIds);
   if (filters.categoryId) query = query.eq("category_id", filters.categoryId);
   if (filters.priority) query = query.eq("priority", filters.priority);
   if (filters.academicLevel) query = query.eq("academic_level", filters.academicLevel);

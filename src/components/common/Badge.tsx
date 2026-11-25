@@ -34,13 +34,14 @@ export interface ChipProps {
   count?: number;
   icon?: LucideIcon;
   onClick?: () => void;
+  disabled?: boolean;
   children: ReactNode;
   className?: string;
 }
 
-export function Chip({ active, count, icon: Icon, onClick, children, className }: ChipProps) {
+export function Chip({ active, count, icon: Icon, onClick, disabled, children, className }: ChipProps) {
   return (
-    <button type="button" onClick={onClick} className={cx("iw-chip", active && "is-active", className)} aria-pressed={active}>
+    <button type="button" onClick={onClick} disabled={disabled} className={cx("iw-chip", active && "is-active", className)} aria-pressed={active}>
       {Icon && <Icon size={14} strokeWidth={2.2} />}
       {children}
       {count !== undefined && <span className="iw-chip__count">{count}</span>}

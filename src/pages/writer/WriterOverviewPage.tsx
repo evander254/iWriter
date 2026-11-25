@@ -40,6 +40,7 @@ import { displayName } from "../../types";
 import {
   claimAssignment,
   getEarningPoints,
+  getWriterSubjectIds,
   listAnnouncements,
   listMarketplaceAssignments,
   listRecentNotifications,
@@ -61,6 +62,7 @@ export function WriterOverviewPage() {
 
   const { data, loading, error, reload } = useAsync(async () => {
     if (!user) return null;
+    const subjectIds = await getWriterSubjectIds(user.id);
     const [claims, submissions, notifications, announcements, withdrawals, earnings, marketplace, revisionRequests] = await Promise.all([
       listWriterClaims(user.id, { pageSize: 100 }),
       listWriterSubmissions(user.id, { pageSize: 100 }),
@@ -68,10 +70,10 @@ export function WriterOverviewPage() {
       listAnnouncements(true),
       listRecentWithdrawals(user.id, 4),
       getEarningPoints(user.id),
-      listMarketplaceAssignments({ pageSize: 6, sortBy: "created_at" }),
+      listMarketplaceAssignments({ pageSize: 6, sortBy: "created_at", subjectIds }),
       listRevisionRequestsForWriter(user.id),
     ]);
-    return { claims, submissions, notifications, announcements, withdrawals, earnings, marketplace, revisionRequests };
+    return { claims, submissions, notifications, announcements, withdrawals, earnings, marketplace, revisionRequests, subjectIds };
   }, [user?.id]);
 
   const stats = useMemo(() => {
@@ -212,7 +214,13 @@ export function WriterOverviewPage() {
         />
         <div className="iw-card__body">
           {data.marketplace.rows.length === 0 ? (
-            <EmptyState icon={Sparkles} title="No assignments available" description="Check back soon — new work is published regularly." compact />
+            <EmptyState
+              icon={Sparkles}
+              title={data.subjectIds.length === 0 ? "Set your skills to get matched" : "No assignments available"}
+              description={data.subjectIds.length === 0 ? "Choose your subjects in your profile to see relevant assignments and receive matching alerts." : "Check back soon — new work is published regularly."}
+              compact
+              action={data.subjectIds.length === 0 ? <Link to="/writer/profile"><Button size="sm" variant="outline">Set my expertise</Button></Link> : undefined}
+            />
           ) : (
             <div className="iw-grid iw-grid--cards">
               {data.marketplace.rows.map((assignment) => (

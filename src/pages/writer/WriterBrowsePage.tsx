@@ -18,7 +18,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { useDebouncedValue } from "../../hooks/useUi";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
-import { claimAssignment, countWriterClaimsByStatus, getMyClaimMap, listCategories, listMarketplaceAssignments, listSubjects } from "../../services";
+import { claimAssignment, countWriterClaimsByStatus, getMyClaimMap, getWriterSubjectIds, listCategories, listMarketplaceAssignments, listSubjects } from "../../services";
 import { PRIORITY_OPTIONS, ACADEMIC_LEVELS } from "../../lib/status";
 import type { AssignmentPriority, Assignment } from "../../types/models";
 
@@ -49,6 +49,11 @@ export function WriterBrowsePage() {
 
   const debounced = useDebouncedValue(search, 350);
 
+  const { data: expertiseIds } = useAsync(
+    async () => user ? getWriterSubjectIds(user.id) : [],
+    [user?.id],
+  );
+
   const { data: reference } = useAsync(async () => {
     const [subjects, categories] = await Promise.all([listSubjects(), listCategories()]);
     return { subjects, categories };
@@ -69,18 +74,19 @@ export function WriterBrowsePage() {
 
   const { data, loading, error, reload } = useAsync(
     () =>
-      listMarketplaceAssignments({
+      expertiseIds === null ? Promise.resolve({ rows: [], count: 0, page, pageSize: 9 }) : listMarketplaceAssignments({
         page,
         pageSize: 9,
         search: debounced,
         subjectId: subjectId || undefined,
+        subjectIds: expertiseIds,
         categoryId: categoryId || undefined,
         priority: priority || undefined,
         academicLevel: level || undefined,
         minReward: minReward ? Number(minReward) : undefined,
         ...sortParams,
       }),
-    [page, debounced, subjectId, categoryId, priority, level, minReward, sortParams],
+    [page, debounced, subjectId, categoryId, priority, level, minReward, sortParams, expertiseIds],
   );
 
   const { data: claimMap, reload: reloadClaims } = useAsync(
@@ -255,10 +261,12 @@ export function WriterBrowsePage() {
         <Card>
           <EmptyState
             icon={Sparkles}
-            title="No assignments match your filters"
-            description="Try broadening your search or clearing filters. New work is added often."
+            title={expertiseIds?.length === 0 ? "Choose your expertise to see assignments" : "No assignments match your filters"}
+            description={expertiseIds?.length === 0 ? "Select the subjects you work in from your profile. The marketplace and assignment alerts will match your expertise." : "Try broadening your search or clearing filters. New work is added often."}
             action={
-              activeFilterCount > 0 ? (
+              expertiseIds?.length === 0 ? (
+                <Button variant="primary" onClick={() => navigate("/writer/profile")}>Set my skills & subjects</Button>
+              ) : activeFilterCount > 0 ? (
                 <Button variant="outline" onClick={resetFilters}>
                   Clear filters
                 </Button>

@@ -29,6 +29,19 @@ body {
 
 #root {
   min-height: 100vh;
+  min-width: 320px;
+  overflow-x: clip;
+}
+
+/* Guard common flex/grid children against intrinsic-width overflow and long user content. */
+*,
+*::before,
+*::after {
+  min-width: 0;
+}
+
+p, label, th, td, button, a {
+  overflow-wrap: anywhere;
 }
 
 h1,

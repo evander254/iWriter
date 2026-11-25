@@ -500,6 +500,7 @@
 .iw-page-head__title {
   font-size: var(--text-2xl);
   letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
 }
 
 .iw-page-head__desc {
@@ -604,10 +605,26 @@
 }
 
 @media (max-width: 640px) {
+  .iw-shell__main {
+    padding: var(--space-4);
+  }
+  .iw-page-head {
+    gap: var(--space-3);
+  }
+  .iw-page-head__actions {
+    width: 100%;
+  }
+  .iw-page-head__actions > * {
+    max-width: 100%;
+  }
   .iw-grid {
     gap: var(--space-4);
   }
   .iw-grid--stats {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .iw-grid--cards,
+  .iw-grid--halves {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

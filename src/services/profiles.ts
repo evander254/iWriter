@@ -53,6 +53,21 @@ export async function updateMyProfile(id: string, input: ProfileUpdateInput): Pr
   return unwrap(data as Profile | null, error, "profile");
 }
 
+/** Selected subjects define which marketplace assignments and publish alerts a writer receives. */
+export async function getWriterSubjectIds(writerId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("writer_subjects")
+    .select("subject_id")
+    .eq("writer_id", writerId);
+  if (error) throw new ApiError(error.message, error);
+  return (data ?? []).map((row) => String(row.subject_id));
+}
+
+export async function saveWriterSubjectIds(subjectIds: string[]): Promise<void> {
+  const { error } = await supabase.rpc("set_writer_subjects", { p_subject_ids: [...new Set(subjectIds)] });
+  if (error) throw new ApiError(friendlyError(error), error);
+}
+
 /** Admin: suspend / reactivate via the guarded RPC. */
 export async function setWriterStatus(userId: string, status: AccountStatus): Promise<void> {
   const { error } = await supabase.rpc("admin_set_writer_status", {

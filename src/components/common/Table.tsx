@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp } from "lucide-react";
 import { cx } from "../../lib/utils";
 
@@ -17,9 +17,32 @@ export interface TableProps {
 }
 
 export function Table({ children, className, compact }: TableProps) {
+  const headers: string[] = [];
+  Children.forEach(children, (section) => {
+    if (!isValidElement<{ children?: ReactNode }>(section) || section.type !== "thead") return;
+    Children.forEach(section.props.children, (row) => {
+      if (!isValidElement<{ children?: ReactNode }>(row)) return;
+      Children.forEach(row.props.children, (cell) => {
+        if (isValidElement<{ children?: ReactNode }>(cell)) headers.push(typeof cell.props.children === "string" ? cell.props.children : "Details");
+      });
+    });
+  });
+  const responsiveChildren = Children.map(children, (section) => {
+    if (!isValidElement<{ children?: ReactNode }>(section) || section.type !== "tbody") return section;
+    return cloneElement(section, undefined, Children.map(section.props.children, (row) => {
+      if (!isValidElement<{ children?: ReactNode }>(row)) return row;
+      let index = 0;
+      return cloneElement(row, undefined, Children.map(row.props.children, (cell) => {
+        if (!isValidElement<{ children?: ReactNode; colSpan?: number }>(cell) || cell.type !== "td") return cell;
+        const label = cell.props.colSpan ? undefined : headers[index];
+        index += cell.props.colSpan ?? 1;
+        return cloneElement(cell as ReactElement<Record<string, unknown>>, { "data-label": label });
+      }));
+    }));
+  });
   return (
     <div className="iw-table-wrap">
-      <table className={cx("iw-table", compact && "iw-table--compact", className)}>{children}</table>
+      <table className={cx("iw-table", compact && "iw-table--compact", className)}>{responsiveChildren}</table>
     </div>
   );
 }
