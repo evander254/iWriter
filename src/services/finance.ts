@@ -92,17 +92,34 @@ export async function listPendingWithdrawals(limit = 6): Promise<WithdrawalReque
   return unwrapList(data as WithdrawalRequest[] | null, error);
 }
 
-/** Writer: request a withdrawal (server validates the balance). */
-export async function requestWithdrawal(input: {
-  amount: number;
+export interface WriterWithdrawalMethod {
+  writer_id: string;
   method: string;
-  accountNumber: string;
-}): Promise<string> {
-  const { data, error } = await supabase.rpc("request_withdrawal", {
-    p_amount: input.amount,
-    p_method: input.method,
-    p_account_number: input.accountNumber,
+  account_number: string;
+  last_changed_at: string;
+}
+
+export async function getWriterWithdrawalMethod(writerId: string): Promise<WriterWithdrawalMethod | null> {
+  const { data, error } = await supabase
+    .from("writer_withdrawal_methods")
+    .select("writer_id, method, account_number, last_changed_at")
+    .eq("writer_id", writerId)
+    .maybeSingle();
+  if (error) throw new ApiError(error.message, error);
+  return data as WriterWithdrawalMethod | null;
+}
+
+export async function saveWriterWithdrawalMethod(method: string, accountNumber: string): Promise<void> {
+  const { error } = await supabase.rpc("set_writer_withdrawal_method", {
+    p_method: method,
+    p_account_number: accountNumber,
   });
+  if (error) throw new ApiError(friendlyError(error), error);
+}
+
+/** Writer: request a withdrawal using the saved payout details. */
+export async function requestWithdrawal(amount: number): Promise<string> {
+  const { data, error } = await supabase.rpc("request_withdrawal", { p_amount: amount });
   if (error) throw new ApiError(friendlyError(error), error);
   return String(data);
 }

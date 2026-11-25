@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Banknote,
+  CalendarDays,
   Coins,
   CreditCard,
   PiggyBank,
@@ -40,6 +41,8 @@ import {
   listRecentTransactions,
   listWithdrawals,
   requestWithdrawal,
+  getWriterWithdrawalMethod,
+  saveWriterWithdrawalMethod,
   sumTransactions,
 } from "../../services";
 import { WITHDRAWAL_METHODS } from "../../lib/status";
@@ -48,30 +51,47 @@ import { formatRelative } from "../../utils/date";
 import { buildTimeSeries, RANGE_OPTIONS, rangeStart, type RangePreset } from "../../utils/charts";
 import { Segmented } from "../../components/common";
 
-const MIN_WITHDRAWAL = 10;
+const MIN_WITHDRAWAL = 5;
 
 const schema = z.object({
   amount: z.coerce.number().positive("Enter an amount").min(MIN_WITHDRAWAL, `Minimum is $${MIN_WITHDRAWAL}`),
-  method: z.string().min(2, "Choose a payout method"),
-  accountNumber: z.string().min(4, "Enter your account or wallet details").max(120),
 });
 type FormValues = z.infer<typeof schema>;
+
+function nextWithdrawalDate(now = new Date()): Date {
+  const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const day = date.getUTCDate();
+  if (day === 1 || day === 15) return date;
+  if (day < 15) date.setUTCDate(15);
+  else date.setUTCMonth(date.getUTCMonth() + 1, 1);
+  return date;
+}
+
+function changedThisMonth(value?: string): boolean {
+  if (!value) return false;
+  const changed = new Date(value);
+  const now = new Date();
+  return changed.getUTCFullYear() === now.getUTCFullYear() && changed.getUTCMonth() === now.getUTCMonth();
+}
 
 export function WriterWalletPage() {
   const { user, profile, refreshProfile } = useAuth();
   const toast = useToast();
   const [range, setRange] = useState<RangePreset>("30d");
   const [busy, setBusy] = useState(false);
+  const [payoutMethod, setPayoutMethod] = useState<string>(WITHDRAWAL_METHODS[0]);
+  const [payoutAccount, setPayoutAccount] = useState("");
 
   const { data, loading, error, reload } = useAsync(async () => {
     if (!user) return null;
-    const [withdrawals, transactions, totals, earnings] = await Promise.all([
+    const [withdrawals, transactions, totals, earnings, withdrawalMethod] = await Promise.all([
       listWithdrawals({ userId: user.id, pageSize: 8 }),
       listRecentTransactions(user.id, 6),
       sumTransactions(user.id),
       getEarningPoints(user.id),
+      getWriterWithdrawalMethod(user.id),
     ]);
-    return { withdrawals, transactions, totals, earnings };
+    return { withdrawals, transactions, totals, earnings, withdrawalMethod };
   }, [user?.id]);
 
   const {
@@ -81,8 +101,14 @@ export function WriterWalletPage() {
     formState: { errors },
   } = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { amount: MIN_WITHDRAWAL, method: WITHDRAWAL_METHODS[0], accountNumber: "" },
+    defaultValues: { amount: MIN_WITHDRAWAL },
   });
+
+  useEffect(() => {
+    if (!data?.withdrawalMethod) return;
+    setPayoutMethod(data.withdrawalMethod.method);
+    setPayoutAccount(data.withdrawalMethod.account_number);
+  }, [data?.withdrawalMethod]);
 
   const balance = profile?.available_balance ?? 0;
   const series = useMemo(() => {
@@ -99,17 +125,30 @@ export function WriterWalletPage() {
   const onSubmit = async (values: FormValues) => {
     setBusy(true);
     try {
-      await requestWithdrawal({
-        amount: values.amount,
-        method: values.method,
-        accountNumber: values.accountNumber.trim(),
-      });
+      await requestWithdrawal(values.amount);
       toast.success("Withdrawal requested", "An administrator will review your request shortly.");
-      reset({ amount: MIN_WITHDRAWAL, method: WITHDRAWAL_METHODS[0], accountNumber: "" });
+      reset({ amount: MIN_WITHDRAWAL });
       await refreshProfile();
       reload();
     } catch (err) {
       toast.error("Could not request withdrawal", err instanceof Error ? err.message : undefined);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onSavePayoutMethod = async () => {
+    if (!payoutMethod || payoutAccount.trim().length < 4) {
+      toast.error("Enter valid payout details", "Account or wallet details must be at least 4 characters.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await saveWriterWithdrawalMethod(payoutMethod, payoutAccount.trim());
+      toast.success("Default withdrawal method saved", "You can change it once per calendar month.");
+      reload();
+    } catch (err) {
+      toast.error("Could not save withdrawal method", err instanceof Error ? err.message : undefined);
     } finally {
       setBusy(false);
     }
@@ -121,6 +160,9 @@ export function WriterWalletPage() {
   }
 
   const suspended = profile.status === "suspended";
+  const withdrawalDay = [1, 15].includes(new Date().getUTCDate());
+  const canEditPayoutMethod = !data.withdrawalMethod || !changedThisMonth(data.withdrawalMethod.last_changed_at);
+  const nextPayoutDate = nextWithdrawalDate().toLocaleDateString(undefined, { dateStyle: "long", timeZone: "UTC" });
 
   return (
     <div className="animate-fade">
@@ -155,8 +197,40 @@ export function WriterWalletPage() {
           </div>
         </Card>
 
-        <Card flush>
-          <CardHeader title="Request a withdrawal" subtitle={`Minimum $${MIN_WITHDRAWAL}`} />
+        <div className="stack iw-gap-5">
+          <Card flush>
+            <CardHeader icon={CalendarDays} title="Default withdrawal method" subtitle="Set your payout details before requesting a withdrawal." />
+            <div className="iw-card__body stack iw-gap-4">
+              {data.withdrawalMethod && !canEditPayoutMethod && (
+                <Alert tone="info" title="Monthly change limit reached">
+                  Your default method can be changed again next month. You can still request a payout using the saved details below.
+                </Alert>
+              )}
+              <Field label="Payout method" htmlFor="payoutMethod" required>
+                <Select id="payoutMethod" value={payoutMethod} disabled={suspended || busy || !canEditPayoutMethod} onChange={(e) => setPayoutMethod(e.target.value)}>
+                  {WITHDRAWAL_METHODS.map((method) => <option key={method} value={method}>{method}</option>)}
+                </Select>
+              </Field>
+              <Field label="Account / wallet details" htmlFor="payoutAccount" required hint="These details will be used for every withdrawal request until changed.">
+                <Input
+                  id="payoutAccount"
+                  value={payoutAccount}
+                  onChange={(e) => setPayoutAccount(e.target.value)}
+                  placeholder="e.g. IBAN, PayPal email, wallet address"
+                  icon={CreditCard}
+                  disabled={suspended || busy || !canEditPayoutMethod}
+                />
+              </Field>
+              {canEditPayoutMethod && (
+                <Button variant="outline" loading={busy} disabled={suspended} onClick={() => void onSavePayoutMethod()}>
+                  {data.withdrawalMethod ? "Update default method" : "Save default method"}
+                </Button>
+              )}
+            </div>
+          </Card>
+
+          <Card flush>
+          <CardHeader title="Request a withdrawal" subtitle={`Minimum $${MIN_WITHDRAWAL} · Withdrawals on the 1st and 15th`} />
           <form className="iw-card__body stack iw-gap-4" onSubmit={handleSubmit(onSubmit)}>
             {suspended && (
               <Alert tone="warning" title="Account suspended">
@@ -170,32 +244,24 @@ export function WriterWalletPage() {
             <Field label="Amount (USD)" htmlFor="amount" required error={errors.amount?.message}>
               <Input id="amount" type="number" step="0.01" min={MIN_WITHDRAWAL} icon={WalletIcon} disabled={suspended} {...register("amount")} />
             </Field>
-            <Field label="Payout method" htmlFor="method" required error={errors.method?.message}>
-              <Select id="method" disabled={suspended} {...register("method")}>
-                {WITHDRAWAL_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Account / wallet details" htmlFor="accountNumber" required error={errors.accountNumber?.message}>
-              <Input
-                id="accountNumber"
-                placeholder="e.g. IBAN, PayPal email, wallet address"
-                icon={CreditCard}
-                disabled={suspended}
-                {...register("accountNumber")}
-              />
-            </Field>
-            <Button type="submit" variant="primary" icon={Banknote} loading={busy} disabled={suspended || balance < MIN_WITHDRAWAL}>
+            {data.withdrawalMethod && (
+              <p className="text-xs text-muted">Paying to {data.withdrawalMethod.method} · {data.withdrawalMethod.account_number}</p>
+            )}
+            {!withdrawalDay && (
+              <Alert tone="info" title="Withdrawal dates are the 1st and 15th">
+                Your next withdrawal date is {nextPayoutDate} (UTC).
+              </Alert>
+            )}
+            <Button type="submit" variant="primary" icon={Banknote} loading={busy} disabled={suspended || balance < MIN_WITHDRAWAL || !data.withdrawalMethod || !withdrawalDay}>
               Request withdrawal
             </Button>
+            {!data.withdrawalMethod && <p className="text-xs text-muted">Save a default withdrawal method above before requesting a payout.</p>}
             {balance < MIN_WITHDRAWAL && (
               <p className="text-xs text-muted">You need at least ${MIN_WITHDRAWAL} to request a payout.</p>
             )}
           </form>
-        </Card>
+          </Card>
+        </div>
       </div>
 
       <div className="iw-grid iw-grid--2-1 iw-mt-5">
