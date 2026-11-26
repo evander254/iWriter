@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
-import { Bell, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun, UserCog, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun, UserCog, LogOut, LayoutDashboard } from "lucide-react";
 import { Dropdown, Avatar, IconButton } from "../common";
 import { useAuth } from "../../contexts/AuthContext";
+import { NotificationDropdown } from "../notifications/NotificationDropdown";
 
 export interface TopbarProps {
   title?: string;
@@ -28,7 +28,7 @@ export function Topbar({
   theme,
   onToggleTheme,
 }: TopbarProps) {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
 
   return (
     <header className="iw-topbar">
@@ -53,10 +53,7 @@ export function Topbar({
           label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
           onClick={onToggleTheme}
         />
-        <Link to={notificationsPath} className="iw-iconbtn" aria-label="Notifications" title="Notifications">
-          <Bell size={18} />
-          {unreadCount > 0 && <span className="iw-iconbtn__dot" />}
-        </Link>
+        {user && <NotificationDropdown userId={user.id} unreadCount={unreadCount} notificationsPath={notificationsPath} />}
 
         <Dropdown
           trigger={
